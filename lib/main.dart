@@ -106,6 +106,7 @@ class PillButton extends StatelessWidget {
     this.height = 46,
     this.width,
     this.fontSize = 13,
+    this.loading = false,
   });
 
   final String label;
@@ -113,6 +114,10 @@ class PillButton extends StatelessWidget {
   final double height;
   final double? width;
   final double fontSize;
+
+  /// Saat true tombol tetap hijau tapi tidak bisa ditekan, dan labelnya
+  /// diganti spinner — supaya pengguna tahu permintaannya masih berjalan.
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -123,25 +128,36 @@ class PillButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(height / 2),
       child: InkWell(
         borderRadius: BorderRadius.circular(height / 2),
-        onTap: onTap,
+        onTap: loading ? null : onTap,
         child: SizedBox(
           height: height,
           width: width,
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
-                  color: fg,
+              if (loading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.ink,
+                  ),
+                )
+              else ...[
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w600,
+                    color: fg,
+                  ),
                 ),
-              ),
-              Positioned(
-                right: 16,
-                child: Icon(Icons.chevron_right, size: 17, color: fg),
-              ),
+                Positioned(
+                  right: 16,
+                  child: Icon(Icons.chevron_right, size: 17, color: fg),
+                ),
+              ],
             ],
           ),
         ),
@@ -519,6 +535,37 @@ class AppTextField extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Kotak pesan error di halaman auth (login & register). Hanya dirender saat
+/// ada pesan, jadi tampilan normal halaman tetap sama persis dengan mockup.
+class AuthMessage extends StatelessWidget {
+  const AuthMessage({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFDECEC),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, size: 16, color: Color(0xFFC0392B)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 11.5, color: Color(0xFFC0392B)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

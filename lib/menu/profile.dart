@@ -15,7 +15,7 @@ class ProfilePage extends StatelessWidget {
     (
       icon: Icons.mail_outline,
       label: 'Email',
-      value: 'dilerragip@gmail.com',
+      value: 'sigit@gmail.com',
     ),
     (
       icon: Icons.location_on_outlined,

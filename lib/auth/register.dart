@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../service/api.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -14,6 +17,8 @@ class _RegisterPageState extends State<RegisterPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
+  bool _loading = false;
+  String? _error;
 
   bool get _valid =>
       _name.text.trim().isNotEmpty &&
@@ -28,7 +33,45 @@ class _RegisterPageState extends State<RegisterPage> {
     _password.addListener(_refresh);
   }
 
-  void _refresh() => setState(() {});
+  /// Pesan error dibersihkan begitu pengguna menyunting isian lagi.
+  void _refresh() => setState(() => _error = null);
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final res = await ApiService.post('/auth/register', {
+        'name': _name.text.trim(),
+        'email': _email.text.trim(),
+        'password': _password.text,
+      });
+      // Register langsung membalas token, jadi pengguna tidak perlu login lagi.
+      await ApiService.saveToken(res['data']['token'].toString());
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainPage()),
+        (route) => false,
+      );
+    } on ApiException catch (e) {
+      // Mis. "Email sudah terdaftar" (409) — ditampilkan apa adanya.
+      if (mounted) setState(() => _error = e.message);
+    } on TimeoutException {
+      if (mounted) {
+        setState(() => _error = 'Server tidak merespons. Coba lagi.');
+      }
+    } catch (_) {
+      // Umumnya koneksi ditolak: API-nya belum jalan di port 3000.
+      if (mounted) {
+        setState(() => _error = 'Tidak bisa terhubung ke server API.');
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -53,13 +96,13 @@ class _RegisterPageState extends State<RegisterPage> {
               AppTextField(
                 label: 'Your full name',
                 controller: _name,
-                hint: 'Ralph Edwards',
+                hint: 'Sigit H.P',
               ),
               const SizedBox(height: 18),
               AppTextField(
                 label: 'Your email address',
                 controller: _email,
-                hint: 'dilerragip@gmail.com',
+                hint: 'name@example.com',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 18),
@@ -77,15 +120,15 @@ class _RegisterPageState extends State<RegisterPage> {
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
+              if (_error != null) ...[
+                const SizedBox(height: 18),
+                AuthMessage(message: _error!),
+              ],
               const SizedBox(height: 22),
               PillButton(
                 label: 'Create Account',
-                onTap: _valid
-                    ? () => Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const MainPage()),
-                          (route) => false,
-                        )
-                    : null,
+                loading: _loading,
+                onTap: _valid ? _submit : null,
               ),
               const SizedBox(height: 20),
               const OrDivider(),

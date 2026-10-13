@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-
 import '../main.dart';
+import '../service/api.dart';
 import 'register.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,8 +15,11 @@ class _LoginPageState extends State<LoginPage> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
+  bool _loading = false;
+  String? _error;
 
-  bool get _valid => _email.text.contains('@') && _password.text.length >= 8;
+  bool get _valid =>
+      _email.text.contains('@') && _password.text.length >= 8;
 
   @override
   void initState() {
@@ -24,7 +28,43 @@ class _LoginPageState extends State<LoginPage> {
     _password.addListener(_refresh);
   }
 
-  void _refresh() => setState(() {});
+  /// Pesan error dibersihkan begitu pengguna menyunting isian lagi.
+  void _refresh() => setState(() => _error = null);
+
+  Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final res = await ApiService.post('/auth/login', {
+        'email': _email.text.trim(),
+        'password': _password.text,
+      });
+      await ApiService.saveToken(res['data']['token'].toString());
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const MainPage()),
+        (route) => false,
+      );
+    } on ApiException catch (e) {
+      // Pesan dari server ("Email atau password salah") ditampilkan apa adanya.
+      if (mounted) setState(() => _error = e.message);
+    } on TimeoutException {
+      if (mounted) {
+        setState(() => _error = 'Server tidak merespons. Coba lagi.');
+      }
+    } catch (_) {
+      // Umumnya koneksi ditolak: API-nya belum jalan di port 3000.
+      if (mounted) {
+        setState(() => _error = 'Tidak bisa terhubung ke server API.');
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -48,7 +88,7 @@ class _LoginPageState extends State<LoginPage> {
               AppTextField(
                 label: 'Your email address',
                 controller: _email,
-                hint: 'dilerragip@gmail.com',
+                hint: 'name@example.com',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 18),
@@ -66,15 +106,43 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
+              if (_error != null) ...[
+                const SizedBox(height: 18),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDECEC),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 16,
+                        color: Color(0xFFC0392B),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFFC0392B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 22),
               PillButton(
                 label: 'Continue',
-                onTap: _valid
-                    ? () => Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => const MainPage()),
-                          (route) => false,
-                        )
-                    : null,
+                loading: _loading,
+                onTap: _valid ? _submit : null,
               ),
               const SizedBox(height: 20),
               const OrDivider(),

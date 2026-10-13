@@ -16,7 +16,7 @@ class HomePage extends StatelessWidget {
         Center(
           child: Column(
             children: [
-              Text('Morning, Ralph', style: serifStyle(size: 27)),
+              Text('Morning, Sigit', style: serifStyle(size: 27)),
               const SizedBox(height: 6),
               const Text(
                 'April 27, 2026',

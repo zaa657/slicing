@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Cadangan riwayat git todo-api (sebelumnya submodule) — jangan ikut di-commit
+todo-api/.git-backup/

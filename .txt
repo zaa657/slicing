@@ -107,7 +107,7 @@ class HomePage extends StatelessWidget {
             _HomeToolbar(onCalendarTap: onCalendarTap),
             const SizedBox(height: 20),
             const Text(
-              'Morning, Ralph',
+              'Morning, Sigit',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: _ink,
